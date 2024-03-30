@@ -1,0 +1,2 @@
+Am facut un program care parcurge recursiv tot subarborele unui director primit in linie de 
+comanda.
