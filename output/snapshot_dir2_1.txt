@@ -1,0 +1,12 @@
+dir2/d2/b-trees-insertion.pdf 502797 Sun Mar 24 13:26:58 2024
+
+dir2/d2/b-trees-removal.pdf 657482 Sun Mar 24 13:27:01 2024
+
+dir2/d2/b-trees.pdf 453045 Sun Mar 24 13:27:03 2024
+
+dir2/d2/cerinta2.txt 375 Thu Apr  4 18:34:34 2024
+
+dir2/f3.txt 57 Thu Apr  4 18:34:14 2024
+
+dir2/f4.txt 102 Thu Apr  4 18:02:25 2024
+

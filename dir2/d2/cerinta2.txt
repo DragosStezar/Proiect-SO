@@ -3,6 +3,4 @@ ignorate. Se face un snapshot pt toate arg valide. Se va compara snapshot ul cur
 diferente se va actualiza snapshot ul vechi. Ultimul argument va fi directorul de iesire unde vor fi stocate
 snapshot urile.
 
-./prog arg1 arg2 -o iesire
-
-Ok am facut cerinta asta   11111111   hjbefre
+./prog -o iesire arg1 arg2

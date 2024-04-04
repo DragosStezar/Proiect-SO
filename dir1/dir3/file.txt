@@ -1,0 +1,269 @@
+Conținut teoretic
+Organizarea unităților de stocare fixe (HDD, SSD)
+Fiecare sistem de operare are un mod propriu de organizare și exploatare a informației stocate pe suporturile de memorare fizice. Principiile, regulile și structurile care realizează acest lucru compun sistemul de fișiere caracteristic sistemului de operare respectiv.
+
+In general, din punctul de vedere al utilizatorului, sistemele de fisiere prezinta o organizare bazata pe conceptele de fisier si director (catalog). Fisierele sunt entitati care incapsuleaza informatia de un anumit tip, iar directoarele grupeaza in interiorul lor fisiere si alte directoare. Orice fisier sau director poate fi identificat prin numele sau, indicat in mod absolut, ca nume de cale sau relativ, fata de directorul curent.
+
+In cazul discurilor fixe (hard-disk-uri) informatia se memoreaza folosind proprietatile magnetice ale acestora. In cazul unitatilor fixe de tip SSD (Solid State Drive) informatiile se stocheaza folosind diferite tehnologii de memorie FLASH.
+
+Hard-disk-ul contine in interior mai multe platane ce pot memora informatie, iar discheta este formata dintr-un singur disc flexibil (cu ambele fete magnetizate). O fata a unui disc este impartita in piste, care sunt cercuri concentrice in care poate fi memorata informatia. Pistele sunt impartite la randul lor in sectoare, un sector memorand o cantitate fixa de informatie (de obicei 512 octeti). Citirea si scrierea informatiei pe un disc se face la nivel de  blocuri de date. Un bloc (cluster)  poate fi format dintr-un singur sector (cum se intampla la dischete) sau din mai multe (ca la hard-disk-uri). In cazul unitatilor SSD notiunile de piste si sectoare dispar dar in continuare citirea si scrierea informatiei se face la nivel de bloc.
+
+Un hard-disk poate fi impartit de utilizator in partitii, fiecare partitie comportandu-se, la nivel utilizator, ca un disc de sine statator. Partitia memoreaza sistemul de fisiere, de unde rezulta ca pe acelasi disc fizic pot fi intalnite mai multe sisteme de fisiere. Pentru calculatoarele personale obisnuite (PC), informatiile referitoare la partitii se memoreaza la inceputul discului, in asa-numita tabela de partitii. Aceasta contine 4 intrari in care memoreaza pozitiile, dimensiunile si tipurile partitiilor de pe disc. Partitiile memorate tabela de la inceputul discului se numesc partitii primare, care pot fi, evident, cel mult 4 la numar. Este posibil, insa, ca in interiorul oricarei partitii primare sa se creeze cate o noua tabela de partitii, referind partitii care fizic se afla in interiorul partitiei curente si care se numesc partitii extinse.
+
+Sistemul de fisiere UNIX
+Spatiul fiecarei partitii Unix contine urmatoarele zone:
+
+
+Boot block
+(block incarcare)
+Superblock	Zona noduri index
+Swapping	Continut
+
+Blocul de incarcare (boot block)contine programele care realizeaza incarcarea partii rezidente a sistemului de operare Unix.
+Superblocul contine informatii generale despre sistemul de fisiere de pe disc: inceputul zonelor urmatoare, inceputul zonelor libere de pe disc.
+Zona de noduri index are o dimensiune fixata la creareea sistemului de fisiere si contine cate o intrare pentru fiecare fisier ce poate fi creat pe acest suport
+Zona pentru swapping (daca exista) este rezervata pentru pastrarea imaginilor proceselor atunci cand sunt eliminate temporar din memorie pentru a face loc altor procese. De obicei, insa, pentru zona de swap se folosesc partitii distincte.
+Ultima zona contine blocurile care memoreaza fisierele propriu-zise.
+In UNIX directoarele sunt implementate tot prin intermediul fisierelor cu proprietatea ca fisierele de tip director nu pot fi scrise de utilizator. Astfel, intrarile dintr-un director, au o structura foarte simpla, continand doar doua compuri: numele fisierului si numarul nodului index asociat fisierului
+
+Un nod index (i-node) contine informatiile esentiale despre fisierul caruia ii corespunde. Exista cate un singur nod index pentru fiecare fisier. Este posibil sa intalnim mai multe intrari in director indicand acelasi nod index (sistemul de fisiere din Unix accepta crearea de legaturi multiple).
+
+Informatia din nodul index cuprinde:
+
+identificatorul utilizatorului: uid (user-id.). Identifica proprietarul fisierului
+identificatorul de grup al utilizatorului
+drepturile de acces la fisier. Drepturile sunt de trei tipuri (r-read, w-write, x-execute)  si sunt grupate pe trei categorii:
+user - drepturile proprietarului fisierului
+group - drepturile utilizatorilor din grupul proprietarului
+others - drepturile tuturor celorlalti utilizatori
+timpul ultimului acces la fisier
+timpul ultimei actualizari a fisierului
+timpul ultimului acces pentru actualizarea nodului index
+codul fisierului (tipul fisierului). Fisierele pot fi: fisiere obisnuite (-), directoare (d), periferice (c) etc.
+lungimea fisierului (in octeti)
+contorul de legaturi al fisierului. Reprezinta numarul de legaturi existente spre acest nod index. Este utilizat la operatia de stergere a nodului index.
+lista de blocuri care contin fisierul
+Lista de blocuri de pe disc care contin fisierul se realizeaza printr-un tablou cu 13 intrari. Primele 10 intrari contin direct adresele de bloc (cluster) pentru primele 10 blocuri ale fisierului. A unsprezecea intrare din aceasta lista este adresa unui bloc, rezervat fisierului, al carui continut este, insa, interpretat ca lista de adrese de blocuri. Se spune ca aceste blocuri sunt adresate prin indirectare simpla. Intrarea a 12-a contine un bloc al carui continut consta in adrese de blocuri, care acestea contin adrese de blocuri de date (indirectare dubla). In mod analog, intrarea cu numarul 13 determina o indirectare tripla.
+Lista de blocuri din nodul index
+
+Sistemul de fisiere din UNIX permite crearea asa-numitelor legaturi la fisiere. O asemenea legatura (link) este vazuta de catre utilizator ca un fisier cu un nume propriu, dar care in realitate refera un alt fisier de pe disc. Orice operatie care se executa asupra fisierului legatura (mai putin stergerea) isi va avea efectul de fapt asupra fisierului indicat de legatura. Daca este solicitata stergerea, efectul depinde de tipul legaturii respective.
+
+Legaturile sunt de doua tipuri:
+
+fizice (hard links)
+simbolice (symbolic links)
+Legaturile din prima categorie se realizeaza prin introducerea de intrari in director care pointeaza spre acelasi nod index, si anume cel al fisierului indicat. Cand spre fisier este stearsa si ultima intrare in director care il indica, fisierul in sine va fi sters si el. Legaturile de acest tip au dezavantajul ca nu pot indica nume de directoare si nici fisiere din alte partitii decat cea pe care se afla.
+Legaturile simbolice sunt de fapt fisiere distincte, marcate cu un cod special, care au ca si continut numele complet al fisierului indicat. Stergerea lor nu afecteaza fisierul. Pot referi directoare, precum si fisiere si directoare din alta partitie sau alt disc, dar au dezavantajul ca pentru ele (fiind fisiere) trebuie creat un nod index separat si, in plus, ocupa spatiu pe disc prin continutul lor.
+
+Crearea legaturilor spre fisiere sau directoare se face cu ajutorul comenzii ln.
+
+ln fisier_indicat nume_legatura - creeaza o legatura "fizica"
+ln -s fisier_indicat nume_legatura - creeaza o legatura simbolica
+Pe langa legaturi, in Unix exista si alte fisiere speciale. Tipul acestora poate fi observat citind primul caracter afisat de comanda ls -l. Astfel, pot exista urmatoarele tipuri de fisiere:
+Fisiere obisnuite
+Directoare. Dupa cum am vazut, sunt fisiere care, avand un format special, grupeaza fisiere
+Fisiere speciale care corespund unor dispozitive orientate pe caractere
+Fisiere speciale care corespund unor dispozitive orientate pe blocuri
+Fisiere FIFO
+Legaturi simbolice
+Fisierele speciale evidentiate la punctele 3 si 4 reprezinta metoda prin care sistemul Unix abstractizeaza dispozitivele de intrare-iesire si alte dipozitive din sistemul de calcul. Toate aceste fisiere se gasesc in directorul /dev.
+Spre exemplu, fiecarei unitati de disc ii corespunde cate un fisier in directorul /dev. In Linux, primul hard-disk pe interfata SATA (sau SCSI) din system ii corespunde fisierul specia /dev/sda, iar primei partitii din acest disc ii corespunde fisierul /dev/sda1. A doua partitie de pe primul disc are ca si corespondent fisierul /dev/sda2, al doilea hard-disk SATA (sau SCSI) are ca si corespondent fisierul /dev/sdb, ...etc.
+
+Fisierele speciale care indica unitati de disc sau partitii sunt folosite in operatia numita montare a sistemelor de fisiere. Sistemul de operare Unix permite montarea intr-un director a unui sistem de fisiere aflat pe un disc sau o partitie. Aceasta inseamna ca, dupa montare, in directorul respectiv se va afla intreaga structura de fisiere si directoare de pe sistemul de fisiere respectiv. Mecanismul este deosebit de puternic, deoarece ofera posibilitatea de a avea o structura de directoare unitara, care grupeaza fisiere de pe mai multe partitii sau discuri. Daca se adauga si sistemul de fisiere NFS (Network File System), aceasta structura de directoare va putea contine si sisteme de fisiere montate de la distanta (de pe alta masina)
+
+Montarea unui sistem de fisiere se face cu comanda mount. Data fara nici un parametru, ea afiseaza sistemele de fisiere montate in momentul respectiv in sistem. O alta forma a ei este urmatoarea:
+
+mount fisier-special director
+care monteaza un disc sau o partitie intr-un director dat; sau
+mount -t tip fisier-special director
+cu acelasi efect, doar ca se specifica in clar tipul sistemului de fisiere care se monteaza. Diferitele variante de Unix cunosc mai multe sau mai putine tipuri de sisteme de fisiere. Spre exemplu, Linux cunoaste, printre altele, urmatoarele:
+
+ext2, ext3, ext4 - sistemele caracteristice Linux
+msdos - sistemul de fisiere DOS FAT16 sau FAT32
+iso9660 - sistem de fisiere pentru unitatile CD-ROM
+smbfs - sistem de fisiere montat la distanta prin protocol SAMBA
+sshfs - sistem de fisiere montat la distanta prin protocolul SSH
+Pentru a afla ce sisteme de fisiere cunoaste un sistem de operare Linux instalat se poate consulta continutul fisierului /proc/filesystem.
+
+Orice sistem de fisiere montat de pe o unitate de disc care permite inlaturarea discului respectiv trebuie demontat inainte de a scoate discul. De asemenea, inainte de inchiderea sau repornirea calculatorului, trebuie de-montate si sistemele de fisiere de pe discurile fixe (in Linux, aceasta din urma operatie se efectueaza automat la restartarea sistemului prin apasarea simultana a tastelor Ctrl+Alt+Del). De-montarea fisierelor se face cu comanda
+ 
+
+umount fisier-special
+sau
+umount director
+(unde director este numele directorului in care a fost montat sistemul de fisiere).
+Apeluri sistem si functii de biblioteca pentru lucrul cu fisiere
+Orice sistem de operare pune la dispozitia programatorilor o serie de servicii prin intermediul carora acestora li se ofera acces la resursele hardware si software gestionate de sistem: lucrul cu tastatura, cu discurile, cu dispozitivul de afisare, gestionarea fisierelor si directoarelor etc. Aceste servicii se numesc apeluri sistem. De cele mai multe ori, operatiile pe care ele le pot face asupra resurselor gestionate sunt operatii simple, cu destul de putine facilitati. De aceea, frecvent, se pot intalni in bibliotecile specifice limbajelor de programare colectii de functii mai complicate care gestioneaza resursele respective, dar oferind programatorului niveluri suplimentare de abstractizare a operatiilor efectuate, precum si importante facilitati in plus. Acestea sunt functiile de biblioteca. Trebuie subliniat faptul ca functiile de biblioteca cu ajutorul carora se poate gestiona o anumita resursa sunt implementate folosind chiar functiile sistem corespunzatoare, specifice sistemului de operare.
+
+Apelurile sistem, dar si functiile de biblioteca, de obicei returneaza anumite valori prin care se comunica apelantului daca acel apel s-a executat corect sau nu. Valoarea efectiv returnata se poate afla in pagina de manual a functiei respective, fie ca este vorba de apel sistem sau functie de biblioteca. In cazul in care un apel sistem sau functie de biblioteca s-a terminat cu eroare este posibil ca toate operatiunile urmatoare efectuate de programator sa fie compromise. Din aceste motive, este absolut necear sa se testeze.
+
+De asemenea, in majoritatea situatilor aceste apeluri, in caz de eroare, vor seta variabila globala errno (declara in errno.h), mostenita de fiecare program. Aceasta varibila errno, in urma aparitiei unei erori este setata cu o valoare menita sa explice situatia eronata aparuta (mai multe informatii despre errno si valorile posibile se pot gasi in pagina de manual pentru errno, sectiunea 3 - man 3 errno). Aceste valori, de multe ori, sunt greu de a fi folosite in varianta lor initiala. Pentru a facilita obtinerea erorilor aparute se pot folosi urmatoarele functii:
+
+ void perror(const char *s);
+Functia perror afiseaza la iesirea standard de eroare un mesaj menit sa descrie ultima eroare aparuta. Practic aceasta functie afiseaza un mesaj ce "transcrie" valoarea numerica a lui errno. String-ul asteptat ca si parametru este afisat inainte mesajului de eroare. Se poate furniza si string-ul nul "". Pagina de manual a functiei se afla in sectiunea 3 (man 3 perror).
+
+char *strerror(int errnum);
+Functia strerror este asemanatoare cu functia perror dar aceasta nu afiseaza ci returneaza string-ul ce l-ar afisa functia perror. Practic aceasta functie returneaza un string ce descrie valoarea erorii descrise de obicei de errno dar codul numeric trebuie dat ca si parametru. Pagina de manual a functiei se afla in sectiunea 3 (man 3 strerror). Un exemplu de utilizare ar putea fi urmatorul:
+
+#include <string.h>
+#include <errno.h>
+.......
+char *error_string = strerror(errno);
+Intr-un mod foare simplificat, o metoda de testare a unui apel sistem (sau functie de biblioteca) ar putea fi urmatoarea:
+
+#include <stdio.h>
+
+int main(void)
+{
+   .....
+   int return_value = system_call(...);
+   if (return_value < 0)
+   {
+      perror("mesaj");
+      exit(-1);
+   }
+   .....
+   return 0;
+}
+Apelurile sistem care vor fi discutate aici sunt caracteristice sistemului de operare UNIX. Principalele operatii urmarite vor fi: deschiderea si inchiderea fisierului, citirea din fisier, scrierea in fisier operatiuni de modificare a pozitiei curente in fisier, operatii de obtinere de informatii suplimentare despre fisiere (structura unui i-node).
+
+Pentru a putea actiona asupra unui fisier, este nevoie inainte de toate de o metoda de a identifica in mod unic fisierul. In cazul functiilor ce vor fi discutate, identificarea fisierului se face printr-un asa-numit descriptor de fisier (file descriptor). Acesta este un numar intreg care este asociat fisierului in momentul deschiderii acestuia. Este important de mentionat ca un descriptor de fisier asignat la deschiderea fisierului identifica in mod unic acel fisier in cadrul programului respectiv. Valoarea intreaga a acestui descriptor nu are nici o semnificatie pentru un alt program. Descriptorul este asignat de catre nucleu pentru programul apelant.
+
+Apeluri sistem pentru deschiderea si inchiderea fisierelor
+Deschiderea unui fisier este operatia prin care fisierul este pregatit pentru a putea fi prelucrat in continuare. Prin aceasta operatiune, programul apelant primeste de la nucleu descriptorul unic pentru acel fisier. Aceasta operatie se realizeaza prin intermediul functiei open:
+
+int open(const char *pathname, int oflag, [, mode_t mode]);
+Pagina de manual a functiei se afla in sectiunea 2 (apeluri sistem): man 2 open
+
+Functia returneaza -1 in caz de eroare si seteaza valoarea corespunzatoare a variabilei errno.In caz contrar, functia returneaza descriptorul de fisier asociat fisierului deschis. Acest descriptor va fi apoi folosit pe tot parcursul programului pentru a identifica in mod unic fisierul.
+
+Argumentele functiei:
+
+pathname - calea catre fisier (poate fi aboluta sau relativa la fisierul executabil al programului)
+oflag - optiunile de deschidere a fisierului. Acest camp este in realitate un sir de biti (bitfield) in care fiecare bit sau grupa de biti are o anumita semnificatie. Pentru fiecare astfel de semnificatie exista definite in fisierul header C fcntl.h cate o constanta. Constantele se pot combina folosind operatorul '|' (sau logic pe biti) din C, pentru a seta mai multi biti (deci a alege mai multe optiuni) in parametrul intreg oflag. Iata cateva din aceste constante:
+O_RDONLY - deschidere numai pentru citire
+O_WRONLY - deschidere numai pentru scriere
+O_RDWR - deschidere pentru citire si scriere
+O_APPEND - deschidere pentru adaugare la sfarsitul fisierului
+O_CREAT - crearea fisierului, daca el nu exista deja; daca e folosita cu aceasta optiune, functia open trebuie sa primeasca si parametrul mode.
+O_EXCL - creare "exclusiva" a fisierului: daca s-a folosit O_CREAT si fisierul exista deja, functia open va  returna eroare
+O_TRUNC - daca fisierul exista, continutul lui este sters
+mode - acest argument este tot un camp de biti (bitfield) si se foloseste si are sens doar in cazul in care fisierul este creat si specifica drepturile de acces asociate fisierului. Acestea se obtin prin combinarea unor constante folosind operatorul sau ('|'), la fel ca si la optiunea precedenta. Constantele pot fi:
+S_IRUSR - drept de citire pentru proprietarul fisierului (user)
+S_IWUSR - drept de scriere pentru proprietarul fisierului (user)
+S_IXUSR - drept de executie pentru proprietarul fisierului (user)
+S_IRGRP - drept de citire pentru grupul proprietar al fisierului
+S_IWGRP - drept de scriere pentru grupul proprietar al fisierului
+S_IXGRP - drept de executie pentru grupul proprietar al fisierului
+S_IROTH - drept de citire pentru ceilalti utilizatori
+S_IWOTH - drept de scriere pentru ceilalti utilizatori
+S_IROTH - drept de executie pentru ceilalti utilizatori
+Pentru crearea fisierelor poate fi folosita si functia creat care este de fapt un caz particular de apel a functiei open:
+
+creat (const char *pathname, mode_t mode);
+echivalent cu:
+
+open(pathname, O_WRONLY | O_CREAT | O_TRUNC, mode)
+Dupa utilizarea fisierului, acesta trebuie inchis, folosind functia close:
+
+int close (int filedes);
+Functia returneaza -1 in caz de eroare si seteaza variabila errno corespunzator. In caz de succes functia returneaza 0. Pagina de manual pentru aceasta functie se afla tot in sectiunea 2: man 2 close. Argumentul filedes specifica descriptorul catre fisierul ce se doreste a fi inchis.
+
+Este absolut necear ca un fisier odata deschis sa fie inchis de catre programator. In cazul in care fisierul ramane deschis, la terminarea executiei programului, sistemul de operare va inchide fortat toate fisierele deschise si este posibil sa apare corupere si pierdere de date.
+
+Un aspect important de mentionat este ca in momentul in care un fisier se inchide, sistemul de operare executa si operatiunea de flush. Prin aceasta operatiune sistemul de operare scrie efectiv pe mediul de stocarea datele scrise anterior de utilizator/programator. In lipsa apelului de close este posibil ca operatiunea de flush sa nu mai fie executata si astfel datele scrie prin eventualele apeluri precedente sa nu ajunga si in mediul fizic de stocare. In caz concet, in momentul in care programatorul/utilizatorul scrie ceva intr-un fisier, sistemul de operare nu scrie efectiv in fisier acele date in acel moment ci acele date sunt trecute printr-o memorie tampon (prin buffer-e). In momentul in care buffer-ele interne sunt pline doar atunci sistemul de operare initiaza o scriere efectia in fisier. Motivele din spatele acestor operatiuni tin de eficientizarea scrierilor. Prin apelul sistem close, sistemul de operare va initia scrierea tuturor datelor fizic in fisier indiferend de starea buffer-elor.
+
+
+
+Apeluri sistem pentru citirea si scrierea fisierelor
+
+
+Citirea datelor dintr-un fisier deschis se face cu apelul sistem read:
+
+ssize_t read(int fd, void *buff, size_t nbytes);
+Functia citeste un numar de maxim nbytes octeti de la pozitia curenta in fisierul al carui descriptor este fd si ii pune in zona de memorie indicata de pointerul buff. Functia returneaza numarul de octeti cititi. Nu este neaparat ca functia sa citeasca din fisier numarul de octeti specificati prin nbytes. Este posibil ca in fisier sa fie de citit la un moment dat mai putin de nbytes octeti (de exemplu daca s-a ajuns spre sfarsitul fisierului), astfel ca functia read va pune in buffer doar atatia octeti cati poate citi. In cazul in care s-a ajuns la capatul fisierului functia read va returna 0. In caz de eroare functia read va returna valoarea -1 si se va seta corespunzator valoarea lui errno. Dupa fiecare citire functia incrementeaza pozitia curenta a indicatorului fisierului cu numarul de octeti cititi.
+
+Este foarte important de mentionat faptul ca aceasta functie nu face nici o prelucrare a datelor citite ci efectiv citeste in mod binar un numar specificati de octeti. O greseala frecventa este aceea de a se considera ca daca fisierul este text si se citeste un numar de octeti, acestia vor forma un string. Aceasta presupunere este total gresita din motivul ca in string este un sir de caracter terminat cu octetul 0x00 ('\0'). Functia read nu adauga acest octet la sfarsit deoarece ea doar citeste din fisier.
+
+De asemenea, functia este absolut gresit a se apela o singura data functia read pentru intregul fisier (mai ales daca este vorba de un fisier de mari dimensiuni). De cele mai multe ori se recomanda un apel ciclic al acestei functii prin care se va citi un numar limitat de octeti pana cand se ajunge la sfarsitul fisierului.
+
+Pagina de manual a apelului read se gaseste in sectiunea 2 (man 2 read).
+
+Scrierea datelor in fisier se face cu apelul sistem write:
+
+ssize_t write(int fd, void *buff, size_t nbytes);
+Functia scrie in fisier primii nbytes octeti, la pozitia curenta, din bufferul indicat de buff in fisierul a carui descriptor este fd. Functia returneaza numarul de octeti ce au fost scrisi in fisier. In caz de eroare functia returneaza -1 si seteaza corespunzator valoarea lui errno. Dupa fiecare scriere, functia incrementeaza pozitia curenta a indicatorului fisierului cu numarul de octeti scrisi.
+
+Pagina de manual a apelului write se gaseste in sectiunea 2 (man 2 write).
+
+
+Apeluri sistem pentru modificarea indicatorului pozitiei curente
+
+
+Operatiile de scriere si citire in si din fisier se fac la o anumita pozitie in fisier, considerata pozitia curenta. Fiecare operatie de citire, de exemplu, va actualiza indicatorul pozitiei curente incrementand-o cu numarul de octeti cititi. Indicatorul pozitiei curente poate fi setat si in mod explicit, cu ajutorul functiei lseek:
+
+off_t lseek(int fd, off_t offset, int pos);
+Functia pozitioneaza indicatorul la deplasamentul offset in fisier, astfel:
+daca parametrul pos ia valoarea SEEK_SET, pozitionarea se face relativ la inceputul fisierului
+daca parametrul pos ia valoarea SEEK_CUR, pozitionarea se face relativ la pozitia curenta
+daca parametrul pos ia valoarea SEEK_END, pozitionarea se face relativ la sfarsitul fisierului
+Parametrul offset poate lua si valori negative si reprezinta deplasamentul, calculat in octeti. In caz de eroare functia va retruna -1 si va seta corespunzator valoarea lui errno.
+
+Apeluri sistem pentru aflarea atributelor fisierelor
+
+
+Atributele unui fisier reprezinta niste informatii aditionale ce se pot afla despre acestea, informatii ce reprezinta de fapt structura i-node-ului. Pentru a se obtine atributele unui fisier se poate folosi apelul sistem stat:
+
+int stat(const char *file_name, struct stat *buf);
+Acest apel sistem primeste ca prim parametru o cale abosoluta sau relativa la programul executabil a unui fisier de pe disc. Al doilea parametru, ce poate fi considerat un parametru de iesire, reprezinta un pointer spre o zona de memorie ce contine o variabila de tip struct stat. Aceasta zona de memorie trebuie sa existe (sa fi fost alocata static sau dinamic) deorece functia stat va scrie in aceasta locatie. Apelul stat retuneaza 0 daca apelul a decurs cu succes sau -1 in caz de eroare cu setarea corespunzatoare a variabilei errno. Pagina de manual a acestei functii se afla in sectiunea 2 (man 2 stat).
+
+Structura struct stat are urmatoarea forma:
+
+    struct stat {
+               dev_t     st_dev;         /* ID of device containing file */
+               ino_t     st_ino;         /* inode number */
+               mode_t    st_mode;        /* file type and mode */
+               nlink_t   st_nlink;       /* number of hard links */
+               uid_t     st_uid;         /* user ID of owner */
+               gid_t     st_gid;         /* group ID of owner */
+               dev_t     st_rdev;        /* device ID (if special file) */
+               off_t     st_size;        /* total size, in bytes */
+               blksize_t st_blksize;     /* blocksize for filesystem I/O */
+               blkcnt_t  st_blocks;      /* number of 512B blocks allocated */
+
+               /* Since Linux 2.6, the kernel supports nanosecond
+                  precision for the following timestamp fields.
+                  For the details before Linux 2.6, see NOTES. */
+
+               struct timespec st_atim;  /* time of last access */
+               struct timespec st_mtim;  /* time of last modification */
+               struct timespec st_ctim;  /* time of last status change */
+
+           #define st_atime st_atim.tv_sec      /* Backward compatibility */
+           #define st_mtime st_mtim.tv_sec
+           #define st_ctime st_ctim.tv_sec
+           };
+Elementele din aceasta structura au urmatoarea semnificatie (se vor descrie doar cele mai utilizate):
+st_mode - reprezinta un bitfield ce contine tipul fisierului si drepturi de acces. Pentru a extrage informatiile despre tipul fisierului din acest bitfield se rcomanda a se folosi unele macro-uri ce sunt puse la dispozitie: S_ISREG(m), S_ISDIR(m), S_ISLNK(m) unde m reprezinta de fapt st_mode (pentru mai multe informatii despre aceste macro-uri se recomanda consultarea paginii de manual). Pentru extragerea infromatiilor despre drepturile de acces din acest bitfield se pot folosi definitiile ce contin anumite masti de biti precum S_IRWXU, S_IRUSR, S_IROTH, ... etc (pentru mai multe informatii despre aceste macro-uri se recomanda consultarea paginii de manual: man 7 inode)
+st_uid - numar intreg ce reprezinta identificatorul utilizatorului owner al acestui fisier (analog cu coloana 3 din iesirea comenzii ls -l)
+st_gid - numar intreg ce reprezinta identificatorul grupului din care face parte fisierul (analog cu coloana 4 din iesirea comenzii ls -l)
+st_size - numar intreg ce reprezinta dimensiunea in bytes a fisierului
+Este important de mentionat faptul ca faca aceasta functie este apelata pentru o legatura simbolica informatiile vor fi oferite pentru fisierul referentiat de legatura simbolica (target) si nu pentru insusi fisierul legatura simbolica. Astfel, functia lstat este asemanatoare cu stat, cu diferenta ca, daca este aplicata unei legaturi simbolice, informatiile returnate se vor referi la legatura, si nu la fisierul indicat. De asemenea functia lstat funcioneaza identic cu functia stat daca se aplica oricarui tip de fisier ce nu este legatura simbolica.
+
+int lstat(const char *file_name, struct stat *buf);
+Pagina de manual a acestei functii se afla in sectiunea 2 (man 2 stat) si in aceeasi pagina de manual cu functia stat.
+
+int fstat(int filedes, struct stat *buf);
+Functia fstat are acelasi efect, cu deosebirea ca ea primeste ca argument un descriptor de fisier, si nu numele acestuia, deci se poate aplica doar fisierelor in prealabil deschise. Pagina de manual a acestei functii se afla in sectiunea 2 (man 2 stat) si in aceeasi pagina de manual cu functia stat.
+
+
+
+Apeluri sistem pentru gestionarea legaturilor
+
+
+Asemanator comenzii ln prezentata in lucrarile de laborator anterioare, exista apeluri sistem ce pot fi folosite din programe scrise in limbajul C ce pot fi folosite pentru a crea sau a sterge legaturi fizice (hard links) sau legaturi simbolice (symbolic link - symlinks).
+
+int link(const char *oldpath, const char *newpath); // creeaza legaturi fixe spre fisiere
+int symlink(const char *oldpath, const char *newpath); //  creeaza legaturi simbolice spre fisiere sau directoare
+int unlink(const char *pathname); // sterge o intrare in director (legatura, fisier sau director)
+Paginile de manual pentru aceste apeluri se gasesc toate in sectiunea 2, acestea fiind apeluri sistem.

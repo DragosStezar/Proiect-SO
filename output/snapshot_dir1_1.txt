@@ -1,0 +1,6 @@
+dir1/dir3/file.txt 28800 Thu Apr  4 18:36:46 2024
+
+dir1/f1.txt 12 Sat Mar 30 12:20:17 2024
+
+dir1/f2.txt 20 Sat Mar 30 12:20:36 2024
+
