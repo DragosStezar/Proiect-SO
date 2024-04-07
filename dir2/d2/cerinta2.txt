@@ -1,6 +1,6 @@
 Primeste oricate argumente <= 10 arg, neduplicate. Programul proceseaza doar directoarele, restul fiind
 ignorate. Se face un snapshot pt toate arg valide. Se va compara snapshot ul curent cu cel vechi si daca exista
-diferente se va actualiza snapshot ul vechi. Ultimul argument va fi directorul de iesire unde vor fi stocate
+diferente se va actualiza snapshot ul vechi. Pimul argument va fi directorul de iesire unde vor fi stocate
 snapshot urile.
 
-./prog -o iesire arg1 arg2
+./prog -o iesire arg1 arg2 arg3 arg4
