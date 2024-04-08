@@ -37,8 +37,8 @@ int comparare_snapshot(char sn1[] , int fd1 , char sn2[] , int fd2)
     }
     else
     {
-        char buf1[SIZE];
-        char buf2[SIZE];
+        char buf1[SIZE]="\0";
+        char buf2[SIZE]="\0";
         int count1;
         int count2;
         lseek(fd1 , 0 , SEEK_SET);
@@ -164,6 +164,7 @@ int main(int argc , char **argv)
             }
             else
             {
+                close(fd2);
                 unlink(nume_dir2);
             }
         }
