@@ -6,7 +6,9 @@ dir2/d2/b-trees.pdf 453045 Sun Mar 24 13:27:03 2024
 
 dir2/d2/cerinta2.txt 383 Sun Apr  7 17:27:18 2024
 
-dir2/f3.txt 99 Mon Apr  8 23:11:24 2024
+dir2/d2/cerinta3.txt 141 Wed Apr 10 16:36:40 2024
+
+dir2/f3.txt 99 Tue Apr  9 23:43:52 2024
 
 dir2/f4.txt 102 Thu Apr  4 18:02:25 2024
 

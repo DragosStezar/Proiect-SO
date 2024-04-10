@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <sys/wait.h>
 #define SIZE 1024
 
 struct stat stat_buffer;
@@ -103,6 +104,8 @@ void creare_snaphot(int fd , char *cale_director)
 
 int main(int argc , char **argv)
 {
+    int wstatus;
+    int pid;
     if(argc > 12)
     {
         perror("Eroare argumente");
@@ -111,64 +114,76 @@ int main(int argc , char **argv)
 
     char dir_out[SIZE];
     strcpy(dir_out , argv[2]);   
+    do{  
 
-    for(int i=3 ; i<argc ; i++)
-    {
-        if(lstat(argv[i] , &stat_buffer)!=0)
+        for(int i=3 ; i<argc ; i++)
         {
-            perror("Eroare director");
-            exit(0);
-        }
-        if(S_ISDIR(stat_buffer.st_mode)==0)
-        {
-            perror("Nu este director");
-            exit(0);
-        }
-        char nume_dir1[SIZE]="";
-        strcat(nume_dir1 , dir_out);
-        strcat(nume_dir1 , "/snapshot_");
-        strcat(nume_dir1 , argv[i]);
-        strcat(nume_dir1 , "_1.txt");
+            if(lstat(argv[i] , &stat_buffer)!=0)
+            {
+                perror("Eroare director");
+                continue;
+            }
+            if(S_ISDIR(stat_buffer.st_mode)==0)
+            {
+                perror("Nu este director");
+                continue;
+            }
+            if((pid=fork())<0)
+            {
+                perror("eroare creare proces");
+                exit(0);
+            }
+            if(pid==0)
+            {
+                char nume_dir1[SIZE]="";
+                strcat(nume_dir1 , dir_out);
+                strcat(nume_dir1 , "/snapshot_");
+                strcat(nume_dir1 , argv[i]);
+                strcat(nume_dir1 , "_1.txt");
 
-        int fd1=open(nume_dir1 , O_RDWR | O_CREAT , S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
-        if(fd1==-1)
-        {
-            perror("Eroare fisier");
-            exit(-1);
-        }
-        if(lstat(nume_dir1 , &stat_buffer)==0)
-        {
-            if(stat_buffer.st_size == 0)
-            {
-                creare_snaphot(fd1 , argv[i]);
-            }
-            
-            char nume_dir2[SIZE]="";
-            strcat(nume_dir2 , dir_out);
-            strcat(nume_dir2 , "/snapshot_");
-            strcat(nume_dir2 , argv[i]);
-            strcat(nume_dir2 , "_2.txt");
+                int fd1=open(nume_dir1 , O_RDWR | O_CREAT , S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
+                if(fd1==-1)
+                {
+                    perror("Eroare fisier");
+                    exit(-1);
+                }
+                if(lstat(nume_dir1 , &stat_buffer)==0)
+                {
+                    if(stat_buffer.st_size == 0)
+                    {
+                        creare_snaphot(fd1 , argv[i]);
+                    }
+                    
+                    char nume_dir2[SIZE]="";
+                    strcat(nume_dir2 , dir_out);
+                    strcat(nume_dir2 , "/snapshot_");
+                    strcat(nume_dir2 , argv[i]);
+                    strcat(nume_dir2 , "_2.txt");
 
-            int fd2=open(nume_dir2 , O_RDWR | O_CREAT , S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
-            if(fd2==-1)
-            {
-                perror("Eroare fisier");
-                exit(-1);
-            }
+                    int fd2=open(nume_dir2 , O_RDWR | O_CREAT , S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
+                    if(fd2==-1)
+                    {
+                        perror("Eroare fisier");
+                        exit(-1);
+                    }
 
-            creare_snaphot(fd2 , argv[i]);
-            if(comparare_snapshot(nume_dir1 , fd1 , nume_dir2 , fd2)==1)
-            {
-                clonare_snaphot(nume_dir1 , fd1 , nume_dir2 , fd2);
-                unlink(nume_dir2);
-            }
-            else
-            {
-                close(fd2);
-                unlink(nume_dir2);
+                    creare_snaphot(fd2 , argv[i]);
+                    if(comparare_snapshot(nume_dir1 , fd1 , nume_dir2 , fd2)==1)
+                    {
+                        clonare_snaphot(nume_dir1 , fd1 , nume_dir2 , fd2);
+                        unlink(nume_dir2);
+                    }
+                    else
+                    {
+                        close(fd2);
+                        unlink(nume_dir2);
+                    }
+                }
+                close(fd1);
+                exit(0);
             }
         }
-        close(fd1);
-    }
+        wstatus=wait(&wstatus);
+    }while (!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus));
     return 0;
 }
