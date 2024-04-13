@@ -135,10 +135,13 @@ int main(int argc , char **argv)
             }
             if(pid==0)
             {
+                char nr1[10]="";
+                int ino1=stat_buffer.st_ino;
+                sprintf(nr1, "%d", ino1);
                 char nume_dir1[SIZE]="";
                 strcat(nume_dir1 , dir_out);
                 strcat(nume_dir1 , "/snapshot_");
-                strcat(nume_dir1 , argv[i]);
+                strcat(nume_dir1 , nr1);
                 strcat(nume_dir1 , "_1.txt");
 
                 int fd1=open(nume_dir1 , O_RDWR | O_CREAT , S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
@@ -153,11 +156,13 @@ int main(int argc , char **argv)
                     {
                         creare_snaphot(fd1 , argv[i]);
                     }
-                    
+                    char nr2[10]="";
+                    int ino2=stat_buffer.st_ino;
+                    sprintf(nr2, "%d", ino2);
                     char nume_dir2[SIZE]="";
                     strcat(nume_dir2 , dir_out);
                     strcat(nume_dir2 , "/snapshot_");
-                    strcat(nume_dir2 , argv[i]);
+                    strcat(nume_dir2 , nr2);
                     strcat(nume_dir2 , "_2.txt");
 
                     int fd2=open(nume_dir2 , O_RDWR | O_CREAT , S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
