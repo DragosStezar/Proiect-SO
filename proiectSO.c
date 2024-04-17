@@ -46,7 +46,6 @@ int comparare_snapshot(char sn1[], int fd1, char sn2[], int fd2)
         lseek(fd2, 0, SEEK_SET);
         while ((count1 = read(fd1, buf1, SIZE)) > 0 && (count2 = read(fd2, buf2, SIZE)) > 0)
         {
-            /// printf("%s %s" , buf1 , buf2);
             if (strlen(buf1) != strlen(buf2))
             {
                 return 1;
@@ -71,12 +70,7 @@ void salvare_snaphot(int fd, char *cale_director)
     write(fd, aux, length_buf);
 }
 
-// void analizare_fisier(int fd, char *cale_director)
-// {
-
-// }
-
-void creare_snaphot(int fd, char *cale_director)
+void creare_snaphot(int fd, char *cale_director , char izolare[])
 {
     int pid, wstatus;
     DIR *director = opendir(cale_director);
@@ -105,7 +99,7 @@ void creare_snaphot(int fd, char *cale_director)
                         }
                         if (pid == 0)
                         {
-                            /// execlp("script.sh", "./script.sh", array_cale, NULL);
+                            execlp("./script.sh", "script.sh", array_cale , izolare , NULL);
                             perror("eroare fiu");
                             exit(0);
                         }
@@ -116,7 +110,7 @@ void creare_snaphot(int fd, char *cale_director)
                 }
                 else if (S_ISDIR(stat_buffer.st_mode))
                 {
-                    creare_snaphot(fd, array_cale);
+                    creare_snaphot(fd, array_cale , izolare);
                 }
             }
         }
@@ -139,7 +133,7 @@ int main(int argc, char **argv)
 
     do
     {
-        for (int i = 3; i < argc; i++)
+        for (int i = 5; i < argc; i++)
         {
             if (lstat(argv[i], &stat_buffer) != 0)
             {
@@ -177,7 +171,7 @@ int main(int argc, char **argv)
                 {
                     if (stat_buffer.st_size == 0)
                     {
-                        creare_snaphot(fd1, argv[i]);
+                        creare_snaphot(fd1, argv[i] , argv[4]);
                     }
                     char nr2[10] = "";
                     int ino2 = stat_buffer.st_ino;
@@ -195,7 +189,7 @@ int main(int argc, char **argv)
                         exit(-1);
                     }
 
-                    creare_snaphot(fd2, argv[i]);
+                    creare_snaphot(fd2, argv[i] , argv[4]);
                     if (comparare_snapshot(nume_dir1, fd1, nume_dir2, fd2) == 1)
                     {
                         clonare_snaphot(nume_dir1, fd1, nume_dir2, fd2);
