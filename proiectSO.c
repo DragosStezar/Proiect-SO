@@ -12,6 +12,8 @@
 #include <sys/wait.h>
 #define SIZE 1024
 
+int count_corruped=0;
+
 struct stat stat_buffer;
 
 void clonare_snaphot(char sn1[], int fd1, char sn2[], int fd2)
@@ -92,18 +94,46 @@ void creare_snaphot(int fd, char *cale_director , char izolare[])
                 {
                     if ((stat_buffer.st_mode & (S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) == 0)
                     {
-                        if ((pid = fork()) < 0)
-                        {
-                            perror("eroare creare proces");
-                            exit(0);
-                        }
-                        if (pid == 0)
-                        {
-                            execlp("./script.sh", "script.sh", array_cale , izolare , NULL);
-                            perror("eroare fiu");
-                            exit(0);
-                        }
-                        wstatus = wait(&wstatus);
+                        do{
+                            int pipefd[2];
+
+                            if(pipe(pipefd)<0)
+                            {
+                                perror("eraore pipe");
+                                exit(0);
+                            }
+
+                            if ((pid = fork()) < 0)
+                            {
+                                perror("eroare creare proces");
+                                exit(0);
+                            }
+                            if (pid == 0)
+                            {
+                                close(pipefd[0]);
+                                dup2(pipefd[1] , 1);
+                                execlp("./script.sh", "script.sh", array_cale , NULL);
+                                perror("eroare fiu");
+                                exit(0);
+                            }
+                            else{
+                                close(pipefd[1]);
+                                char message[100]="";
+                                int count=read(pipefd[0] , message , sizeof(message));
+                                close(pipefd[0]);
+                                if(count<0)
+                                {
+                                    perror("eroare citire pipe");
+                                    exit(0);
+                                }
+                                if(strcmp(message , "SAFE")!=0)
+                                {
+                                    count_corruped++;
+                                    printf("%s      -are %d fisier corupte\n" , message , count_corruped);
+                                }
+                            }
+                            wstatus = wait(&wstatus);
+                        }while(!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus));
                     }
                     else
                         salvare_snaphot(fd, array_cale);
@@ -152,6 +182,7 @@ int main(int argc, char **argv)
             }
             if (pid == 0)
             {
+                count_corruped=0;
                 char nr1[10] = "";
                 int ino1 = stat_buffer.st_ino;
                 sprintf(nr1, "%d", ino1);
