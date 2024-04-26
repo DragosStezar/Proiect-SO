@@ -94,51 +94,58 @@ void creare_snaphot(int fd, char *cale_director , char izolare[])
                 {
                     if ((stat_buffer.st_mode & (S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) == 0)
                     {
-                        do{
-                            int pipefd[2];
+                        int pipefd[2];
 
-                            if(pipe(pipefd)<0)
+                        if(pipe(pipefd)<0)
+                        {
+                            perror("eroare pipe");
+                            exit(0);
+                        }
+                        if ((pid=fork())<0)
+                        {
+                            perror("eroare creare proces");
+                            exit(0);
+                        }
+                        if (pid==0)
+                        {
+                            close(pipefd[0]);
+                            dup2(pipefd[1] , 1);
+                            execlp("./script.sh", "script.sh", array_cale , NULL);
+                            perror("eroare script");
+                            exit(0);
+                        }
+                        else{
+                            close(pipefd[1]);
+                            char message[100]="";
+                            int count=read(pipefd[0] , message , sizeof(message));
+                            close(pipefd[0]);
+                            if(count<0)
                             {
-                                perror("eraore pipe");
+                                perror("eroare citire pipe");
                                 exit(0);
                             }
-
-                            if ((pid = fork()) < 0)
+                            message[strcspn(message , "\n")]='\0';
+                            if(strcmp(message , "SAFE")!=0)
                             {
-                                perror("eroare creare proces");
-                                exit(0);
-                            }
-                            if (pid == 0)
-                            {
-                                close(pipefd[0]);
-                                dup2(pipefd[1] , 1);
-                                execlp("./script.sh", "script.sh", array_cale , NULL);
-                                perror("eroare fiu");
-                                exit(0);
-                            }
-                            else{
-                                close(pipefd[1]);
-                                char message[100]="";
-                                int count=read(pipefd[0] , message , sizeof(message));
-                                close(pipefd[0]);
-                                if(count<0)
+                                count_corruped++;
+                                printf("%s -are %d fisiere corupte\n" , message , count_corruped);
+                                char nume_fis[150]="";
+                                char cale_noua[300]="";
+                                char *p=strrchr(array_cale , '/');
+                                if(p)                                    
                                 {
-                                    perror("eroare citire pipe");
-                                    exit(0);
+                                    strcpy(nume_fis , p+1);
                                 }
-                                if(strcmp(message , "SAFE")!=0)
-                                {
-                                    count_corruped++;
-                                    printf("%s      -are %d fisier corupte\n" , message , count_corruped);
-                                }
+                                snprintf(cale_noua , sizeof(cale_noua) , "%s/%s" , izolare , nume_fis);
+                                rename(array_cale , cale_noua);
                             }
-                            wstatus = wait(&wstatus);
-                        }while(!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus));
+                        }
+                        wstatus = wait(&wstatus);
+                        ///wstatus = wait(&wstatus);
                     }
-                    else
-                        salvare_snaphot(fd, array_cale);
+                    else salvare_snaphot(fd, array_cale);
                 }
-                else if (S_ISDIR(stat_buffer.st_mode))
+                else if(S_ISDIR(stat_buffer.st_mode))
                 {
                     creare_snaphot(fd, array_cale , izolare);
                 }
@@ -161,8 +168,8 @@ int main(int argc, char **argv)
     char dir_out[SIZE];
     strcpy(dir_out, argv[2]);
 
-    do
-    {
+    // do
+    // {
         for (int i = 5; i < argc; i++)
         {
             if (lstat(argv[i], &stat_buffer) != 0)
@@ -235,8 +242,9 @@ int main(int argc, char **argv)
                 close(fd1);
                 exit(0);
             }
+            wstatus = wait(&wstatus);
         }
-        wstatus = wait(&wstatus);
-    } while (!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus));
+        
+    //}while (!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus));
     return 0;
 }
