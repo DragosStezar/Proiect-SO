@@ -13,7 +13,8 @@
 #define SIZE 1024
 
 int count_corruped=0;
-
+char array_distinct[10][100]={""};
+int size_array=0;
 struct stat stat_buffer;
 
 void clonare_snaphot(char sn1[], int fd1, char sn2[], int fd2)
@@ -75,6 +76,7 @@ void salvare_snaphot(int fd, char *cale_director)
 void creare_snaphot(int fd, char *cale_director , char izolare[])
 {
     int pid, wstatus;
+    pid_t w;
     DIR *director = opendir(cale_director);
     if (director == NULL)
     {
@@ -128,7 +130,6 @@ void creare_snaphot(int fd, char *cale_director , char izolare[])
                             if(strcmp(message , "SAFE")!=0)
                             {
                                 count_corruped++;
-                                printf("%s -are %d fisiere corupte\n" , message , count_corruped);
                                 char nume_fis[150]="";
                                 char cale_noua[300]="";
                                 char *p=strrchr(array_cale , '/');
@@ -139,13 +140,17 @@ void creare_snaphot(int fd, char *cale_director , char izolare[])
                                 snprintf(cale_noua , sizeof(cale_noua) , "%s/%s" , izolare , nume_fis);
                                 rename(array_cale , cale_noua);
                             }
+                            w=wstatus = wait(&wstatus);
+                            if(w==-1)
+                            {
+                                perror("eroare wait");
+                                exit(0);
+                            }
                         }
-                        wstatus = wait(&wstatus);
-                        ///wstatus = wait(&wstatus);
                     }
                     else salvare_snaphot(fd, array_cale);
                 }
-                else if(S_ISDIR(stat_buffer.st_mode))
+                else if(S_ISDIR(stat_buffer.st_mode) && S_ISLNK(stat_buffer.st_mode)==0)
                 {
                     creare_snaphot(fd, array_cale , izolare);
                 }
@@ -157,12 +162,37 @@ void creare_snaphot(int fd, char *cale_director , char izolare[])
 
 int main(int argc, char **argv)
 {
-    int wstatus;
-    int pid;
+    pid_t w;
+    int wstatus , pid;
     if (argc > 12)
     {
         perror("Eroare argumente");
         exit(0);
+    }
+
+    for(int i=5 ; i<argc ; i++)
+    {
+        if (lstat(argv[i], &stat_buffer)!=0)
+        {
+            perror("Eroare director");
+            continue;
+        }
+        if (S_ISDIR(stat_buffer.st_mode) && S_ISLNK(stat_buffer.st_mode)==0)
+        {
+            int valid=0;
+            for(int j=0 ; j<size_array ; j++)
+            {
+                if(strcmp(array_distinct[j] , argv[i])==0)
+                {
+                    valid=1;
+                    break;
+                }
+            }
+            if(valid==0)
+            {
+                strcpy(array_distinct[size_array++] , argv[i]);
+            }
+        }
     }
 
     char dir_out[SIZE];
@@ -170,9 +200,9 @@ int main(int argc, char **argv)
 
     // do
     // {
-        for (int i = 5; i < argc; i++)
+        for (int i = 0; i < size_array; i++)
         {
-            if (lstat(argv[i], &stat_buffer) != 0)
+            if (lstat(array_distinct[i], &stat_buffer) != 0)
             {
                 perror("Eroare director");
                 continue;
@@ -209,7 +239,7 @@ int main(int argc, char **argv)
                 {
                     if (stat_buffer.st_size == 0)
                     {
-                        creare_snaphot(fd1, argv[i] , argv[4]);
+                        creare_snaphot(fd1, array_distinct[i] , argv[4]);
                     }
                     char nr2[10] = "";
                     int ino2 = stat_buffer.st_ino;
@@ -227,7 +257,7 @@ int main(int argc, char **argv)
                         exit(-1);
                     }
 
-                    creare_snaphot(fd2, argv[i] , argv[4]);
+                    creare_snaphot(fd2, array_distinct[i] , argv[4]);
                     if (comparare_snapshot(nume_dir1, fd1, nume_dir2, fd2) == 1)
                     {
                         clonare_snaphot(nume_dir1, fd1, nume_dir2, fd2);
@@ -239,12 +269,26 @@ int main(int argc, char **argv)
                         unlink(nume_dir2);
                     }
                 }
-                close(fd1);
+                exit(count_corruped);
+            }
+        }
+        for(int i=0 ; i<size_array ; i++)
+        {
+            w = wait(&wstatus);
+            if(w==-1)
+            {
+                perror("eroare wait");
                 exit(0);
             }
-            wstatus = wait(&wstatus);
+            if (WIFEXITED(wstatus)) {
+                printf("Procesul %d cu PID=%d s-a terminat cu numarul de fisiere corupte returnate %d\n", i , w , WEXITSTATUS(wstatus));
+            } else if (WIFSIGNALED(wstatus)) {
+                printf("killed by signal %d\n", WTERMSIG(wstatus));
+            } else if (WIFSTOPPED(wstatus)) {
+                printf("stopped by signal %d\n", WSTOPSIG(wstatus));
+            } else if (WIFCONTINUED(wstatus)) {
+                printf("continued\n");
+            }
         }
-        
-    //}while (!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus));
     return 0;
 }
