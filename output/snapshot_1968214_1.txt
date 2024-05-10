@@ -1,8 +1,8 @@
-dir2/f3.txt 99 Wed Apr 17 22:04:08 2024
+dir2/f3.txt 402 Fri May 10 18:13:08 2024
 
 dir2/f4.txt 102 Wed Apr 17 22:04:08 2024
 
-dir2/c4.txt 5 Fri Apr 26 14:53:05 2024
+dir2/c4.txt 24 Fri May 10 18:12:59 2024
 
 dir2/d2/b-trees.pdf 453045 Wed Apr 17 22:04:08 2024
 
@@ -13,6 +13,4 @@ dir2/d2/b-trees-insertion.pdf 502797 Wed Apr 17 22:04:08 2024
 dir2/d2/cerinta2.txt 383 Wed Apr 17 22:04:08 2024
 
 dir2/d2/b-trees-removal.pdf 657482 Wed Apr 17 22:04:08 2024
-
-al.pdf 657482 Wed Apr 17 22:04:08 2024
 
